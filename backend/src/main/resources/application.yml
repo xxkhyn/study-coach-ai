@@ -2,9 +2,9 @@ spring:
   application:
     name: study-coach-ai-backend
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/study_coach_ai}
-    username: ${SPRING_DATASOURCE_USERNAME:studycoach}
-    password: ${SPRING_DATASOURCE_PASSWORD:studycoach}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
@@ -14,7 +14,7 @@ spring:
     open-in-view: false
 
 server:
-  port: ${PORT:${SERVER_PORT:8080}}
+  port: ${PORT:8080}
 
 app:
   cors:
@@ -26,5 +26,5 @@ app:
       connect-timeout-ms: ${GEMINI_CONNECT_TIMEOUT_MS:5000}
       read-timeout-ms: ${GEMINI_READ_TIMEOUT_MS:30000}
   jwt:
-    secret: ${JWT_SECRET:study-coach-ai-dev-secret-key-change-me-please}
+    secret: ${JWT_SECRET}
     expires-in-seconds: ${JWT_EXPIRES_IN_SECONDS:86400}

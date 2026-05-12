@@ -241,6 +241,10 @@ JWT_EXPIRES_IN_SECONDS=86400
 CORS_ALLOWED_ORIGINS=https://your-vercel-app.vercel.app
 ```
 
+`DATABASE_URL` という名前ではSpring Boot側の設定に使われません。Railway Variablesには必ず `SPRING_DATASOURCE_URL`、`SPRING_DATASOURCE_USERNAME`、`SPRING_DATASOURCE_PASSWORD` の名前で登録してください。
+
+`SPRING_DATASOURCE_URL` が未設定の場合、本番環境では起動時に失敗します。これはRailway上で誤って `localhost:5432` に接続しないようにするためです。
+
 ### Neon設定
 
 NeonでPostgreSQLプロジェクトを作成し、接続情報をRailwayの環境変数に設定します。
