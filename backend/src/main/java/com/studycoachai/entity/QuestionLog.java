@@ -72,6 +72,16 @@ public class QuestionLog {
         this.memo = memo;
     }
 
+    public void update(Long studyTargetId, String field, LocalDate practicedDate, Integer solvedCount, Integer correctCount, String memo) {
+        this.studyTargetId = studyTargetId;
+        this.field = field;
+        this.practicedDate = practicedDate;
+        this.solvedCount = solvedCount;
+        this.correctCount = correctCount;
+        this.accuracyRate = calculateAccuracy(solvedCount, correctCount);
+        this.memo = memo;
+    }
+
     @PrePersist
     void onCreate() {
         OffsetDateTime now = OffsetDateTime.now();

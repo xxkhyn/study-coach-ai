@@ -10,6 +10,9 @@ import com.studycoachai.dto.AiAdvicePromptData;
 import com.studycoachai.dto.AiAdviceResponse;
 import com.studycoachai.dto.AiAdviceTaskResponse;
 import com.studycoachai.dto.AiAdviceWeakPointResponse;
+import com.studycoachai.dto.AiGeneratedQuestionResponse;
+import com.studycoachai.dto.AiQuestionGenerationResult;
+import com.studycoachai.dto.QuestionGenerationPromptData;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -45,18 +48,42 @@ public class GeminiAiClient implements AiClient {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public AiAdviceResponse generateDailyAdvice(AiAdvicePromptData promptData) {
+        String rawResponse = generateJson(buildAdvicePrompt(promptData), 0.4);
+        ParsedAdvice parsedAdvice = parseAdvice(rawResponse);
+        return new AiAdviceResponse(
+                null,
+                null,
+                promptData.today(),
+                parsedAdvice.summary(),
+                parsedAdvice.tasks(),
+                parsedAdvice.weakPoints(),
+                parsedAdvice.overallAdvice(),
+                rawResponse,
+                null
+        );
+    }
+
+    @Override
+    public AiQuestionGenerationResult generateQuestions(QuestionGenerationPromptData promptData) {
+        String prompt = buildQuestionPrompt(promptData);
+        String rawResponse = generateJson(prompt, 0.7);
+        GeneratedQuestionsPayload payload = parseQuestions(rawResponse);
+        return new AiQuestionGenerationResult(prompt, rawResponse, payload.withSafeList().questions());
+    }
+
+    @SuppressWarnings("unchecked")
+    private String generateJson(String prompt, double temperature) {
         if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalStateException("GEMINI_API_KEY is not set on the backend.");
+            throw new IllegalStateException("GEMINI_API_KEY is not set on the backend. Set GEMINI_API_KEY before using AI generation.");
         }
 
         Map<String, Object> body = Map.of(
                 "contents", List.of(Map.of(
-                        "parts", List.of(Map.of("text", buildPrompt(promptData)))
+                        "parts", List.of(Map.of("text", prompt))
                 )),
                 "generationConfig", Map.of(
-                        "temperature", 0.4,
+                        "temperature", temperature,
                         "responseMimeType", "application/json"
                 )
         );
@@ -67,19 +94,7 @@ public class GeminiAiClient implements AiClient {
                     .body(body)
                     .retrieve()
                     .body(Map.class);
-            String rawResponse = extractText(response);
-            ParsedAdvice parsedAdvice = parseAdvice(rawResponse);
-            return new AiAdviceResponse(
-                    null,
-                    null,
-                    promptData.today(),
-                    parsedAdvice.summary(),
-                    parsedAdvice.tasks(),
-                    parsedAdvice.weakPoints(),
-                    parsedAdvice.overallAdvice(),
-                    rawResponse,
-                    null
-            );
+            return extractText(response);
         } catch (RestClientResponseException ex) {
             throw new IllegalStateException("Gemini API returned an error: " + ex.getStatusCode() + " " + ex.getResponseBodyAsString(), ex);
         } catch (ResourceAccessException ex) {
@@ -90,11 +105,11 @@ public class GeminiAiClient implements AiClient {
         }
     }
 
-    private String buildPrompt(AiAdvicePromptData data) {
+    private String buildAdvicePrompt(AiAdvicePromptData data) {
         return """
                 あなたは資格・技術学習のコーチです。
                 以下の学習データをもとに、今日の勉強メニューと苦手分野への改善アドバイスを日本語で生成してください。
-                出力は説明文やMarkdownを含めず、必ずJSONのみを返してください。
+                説明文やMarkdownは含めず、必ずJSONだけを返してください。
 
                 返却JSON形式:
                 {
@@ -116,9 +131,9 @@ public class GeminiAiClient implements AiClient {
                 }
 
                 ルール:
-                - tasks は1〜5件
-                - minutes は15〜90分
-                - 学習対象の目標日が近いもの、期限切れタスク、苦手分野を優先
+                - tasks は1から5件
+                - minutes は15から90分
+                - 目標日が近い学習対象、期限切れタスク、苦手分野を優先する
                 - データが少ない場合は、未完了タスクと目標日から無理のない提案にする
 
                 今日: %s
@@ -140,6 +155,56 @@ public class GeminiAiClient implements AiClient {
                 writeJson(data.fieldAccuracies()),
                 writeJson(data.weakFields()),
                 writeJson(data.recentQuestionLogs())
+        );
+    }
+
+    private String buildQuestionPrompt(QuestionGenerationPromptData data) {
+        return """
+                あなたは資格試験向けの問題作成者です。
+                次の条件に従って、日本語のオリジナル4択問題を生成してください。
+
+                入力条件:
+                - 学習対象: %s
+                - 資格種別: %s
+                - 分野: %s
+                - 難易度: %s
+                - 問題数: %d
+
+                重要ルール:
+                - 実際の過去問や市販問題集の問題をそのまま再現しないこと
+                - 試験範囲に沿ったオリジナル問題を作ること
+                - 4択問題にすること
+                - choices は必ず4つにすること
+                - answerIndex は0から3の整数で返すこと
+                - explanation を必ず含めること
+                - 計算問題の場合は途中式や考え方を explanation に含めること
+                - 問題文、選択肢、解説は日本語にすること
+                - JSON以外の文章を返さないこと
+
+                返却JSON形式:
+                {
+                  "questions": [
+                    {
+                      "field": "ネットワーク",
+                      "difficulty": "basic",
+                      "questionText": "TCPとUDPの説明として適切なものはどれか。",
+                      "choices": [
+                        "TCPはコネクションレス型である",
+                        "UDPは到達確認や再送制御を標準で行う",
+                        "TCPは信頼性の高い通信を提供する",
+                        "UDPは必ずTCPより低速である"
+                      ],
+                      "answerIndex": 2,
+                      "explanation": "TCPはコネクション型で、到達確認や再送制御により信頼性の高い通信を提供する。"
+                    }
+                  ]
+                }
+                """.formatted(
+                data.studyTargetName(),
+                data.examType(),
+                data.field(),
+                data.difficulty(),
+                data.count()
         );
     }
 
@@ -168,6 +233,19 @@ public class GeminiAiClient implements AiClient {
                 throw new IllegalStateException("Gemini response JSON is missing required fields.");
             }
             return parsedAdvice.withSafeLists();
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Gemini response was not valid JSON.", ex);
+        }
+    }
+
+    private GeneratedQuestionsPayload parseQuestions(String rawResponse) {
+        String json = extractJson(rawResponse);
+        try {
+            GeneratedQuestionsPayload payload = objectMapper.readValue(json, GeneratedQuestionsPayload.class);
+            if (payload.questions() == null || payload.questions().isEmpty()) {
+                throw new IllegalStateException("Gemini response JSON did not include questions.");
+            }
+            return payload;
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("Gemini response was not valid JSON.", ex);
         }
@@ -225,6 +303,12 @@ public class GeminiAiClient implements AiClient {
                     weakPoints == null ? List.of() : weakPoints,
                     overallAdvice
             );
+        }
+    }
+
+    private record GeneratedQuestionsPayload(List<AiGeneratedQuestionResponse> questions) {
+        private GeneratedQuestionsPayload withSafeList() {
+            return new GeneratedQuestionsPayload(questions == null ? List.of() : questions);
         }
     }
 }

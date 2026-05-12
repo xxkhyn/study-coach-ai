@@ -5,6 +5,15 @@ import type {
   DailyStudyTime,
   FieldAccuracy,
   LoginRequest,
+  Question,
+  QuestionAnswerResponse,
+  QuestionAttempt,
+  QuestionGenerationLog,
+  QuestionGenerationRequest,
+  QuestionImportResult,
+  QuestionLog,
+  QuestionLogRequest,
+  QuestionRequest,
   RegisterRequest,
   StudyLog,
   StudyLogRequest,
@@ -23,8 +32,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080
 
 async function request<T>(path: string, options?: RequestInit, requireAuth = true): Promise<T> {
   const token = auth.getToken();
+  const isFormData = options?.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options?.headers as Record<string, string> | undefined),
   };
 
@@ -80,6 +90,21 @@ function cleanLog(body: StudyLogRequest): StudyLogRequest {
   return {
     ...body,
     studiedDate: cleanDate(body.studiedDate) ?? body.studiedDate,
+  };
+}
+
+function cleanQuestionLog(body: QuestionLogRequest): QuestionLogRequest {
+  return {
+    ...body,
+    practicedDate: cleanDate(body.practicedDate) ?? body.practicedDate,
+  };
+}
+
+function cleanQuestion(body: QuestionRequest): QuestionRequest {
+  return {
+    ...body,
+    year: body.year || undefined,
+    choices: body.choices.map((choice) => choice.trim()),
   };
 }
 
@@ -174,4 +199,63 @@ export const api = {
     request<void>(`/study-logs/${id}`, {
       method: 'DELETE',
     }),
+
+  listQuestionLogs: () => request<QuestionLog[]>('/question-logs'),
+  getQuestionLog: (id: number) => request<QuestionLog>(`/question-logs/${id}`),
+  getQuestionLogAccuracyByField: () => request<FieldAccuracy[]>('/question-logs/accuracy-by-field'),
+  getQuestionLogWeakFields: () => request<WeakField[]>('/question-logs/weak-fields'),
+  createQuestionLog: (body: QuestionLogRequest) =>
+    request<QuestionLog>('/question-logs', {
+      method: 'POST',
+      body: JSON.stringify(cleanQuestionLog(body)),
+    }),
+  updateQuestionLog: (id: number, body: QuestionLogRequest) =>
+    request<QuestionLog>(`/question-logs/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(cleanQuestionLog(body)),
+    }),
+  deleteQuestionLog: (id: number) =>
+    request<void>(`/question-logs/${id}`, {
+      method: 'DELETE',
+    }),
+
+  listQuestions: () => request<Question[]>('/questions'),
+  getQuestion: (id: number) => request<Question>(`/questions/${id}`),
+  getRandomQuestion: () => request<Question>('/questions/random'),
+  listWrongQuestions: () => request<Question[]>('/questions/wrong'),
+  createQuestion: (body: QuestionRequest) =>
+    request<Question>('/questions', {
+      method: 'POST',
+      body: JSON.stringify(cleanQuestion(body)),
+    }),
+  importQuestionsCsv: (studyTargetId: number, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request<QuestionImportResult>(`/questions/import-csv?studyTargetId=${studyTargetId}`, {
+      method: 'POST',
+      body: formData,
+    });
+  },
+  generateAiQuestions: (body: QuestionGenerationRequest) =>
+    request<Question[]>('/questions/generate-ai', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  listQuestionGenerationLogs: () => request<QuestionGenerationLog[]>('/question-generation-logs'),
+  updateQuestion: (id: number, body: QuestionRequest) =>
+    request<Question>(`/questions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(cleanQuestion(body)),
+    }),
+  deleteQuestion: (id: number) =>
+    request<void>(`/questions/${id}`, {
+      method: 'DELETE',
+    }),
+  answerQuestion: (id: number, selectedIndex: number) =>
+    request<QuestionAnswerResponse>(`/questions/${id}/answer`, {
+      method: 'POST',
+      body: JSON.stringify({ selectedIndex }),
+    }),
+  listQuestionAttempts: () => request<QuestionAttempt[]>('/question-attempts'),
+  getQuestionAttemptAccuracyByField: () => request<FieldAccuracy[]>('/question-attempts/accuracy-by-field'),
 };

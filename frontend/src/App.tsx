@@ -16,7 +16,9 @@ export default function App() {
         <div>
           <p className="eyebrow">Study Coach AI</p>
           <h1>資格・技術学習の管理</h1>
-          <p className="topbar-copy">今日やること、今週の学習量、苦手分野をまとめて確認できます。</p>
+          <p className="topbar-copy">
+            今日やること、学習時間、苦手分野、AIアドバイスをまとめて確認できます。
+          </p>
         </div>
         <div className="topbar-actions">
           <nav className="nav">
@@ -26,6 +28,8 @@ export default function App() {
             <NavLink to="/targets">学習対象</NavLink>
             <NavLink to="/tasks">タスク</NavLink>
             <NavLink to="/logs">学習ログ</NavLink>
+            <NavLink to="/question-logs">演習ログ</NavLink>
+            <NavLink to="/questions">問題演習</NavLink>
           </nav>
           <div className="user-menu">
             <span>{user?.username ?? 'ログイン中'}</span>

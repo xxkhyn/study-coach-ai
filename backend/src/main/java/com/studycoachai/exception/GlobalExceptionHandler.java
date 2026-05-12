@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     ResponseEntity<ApiErrorResponse> handleIllegalState(IllegalStateException exception) {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                .body(ApiErrorResponse.of(502, "AI Advice Error", List.of(exception.getMessage())));
+                .body(ApiErrorResponse.of(502, "AI Error", List.of(exception.getMessage())));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

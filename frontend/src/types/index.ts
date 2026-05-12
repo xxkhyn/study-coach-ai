@@ -121,6 +121,15 @@ export type QuestionLog = {
   updatedAt: string;
 };
 
+export type QuestionLogRequest = {
+  studyTargetId: number;
+  field?: string;
+  practicedDate: string;
+  solvedCount: number;
+  correctCount: number;
+  memo?: string;
+};
+
 export type FieldAccuracy = {
   field: string;
   solvedCount: number;
@@ -167,4 +176,96 @@ export type AiAdvice = {
   weakPoints: AiAdviceWeakPoint[];
   overallAdvice: string;
   createdAt: string;
+};
+
+export type QuestionSourceType = 'IPA_PAST_EXAM' | 'AI_GENERATED' | 'USER_CREATED' | 'PRIVATE_NOTE';
+
+export type Question = {
+  id: number;
+  userId: number;
+  studyTargetId: number;
+  studyTargetName?: string | null;
+  examType?: string | null;
+  year?: number | null;
+  season?: string | null;
+  timeCategory?: string | null;
+  questionNumber?: string | null;
+  field?: string | null;
+  difficulty?: string | null;
+  questionText: string;
+  choices: string[];
+  answerIndex: number;
+  explanation?: string | null;
+  sourceType: QuestionSourceType;
+  sourceLabel?: string | null;
+  sourceUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type QuestionRequest = {
+  studyTargetId: number;
+  examType?: string;
+  year?: number;
+  season?: string;
+  timeCategory?: string;
+  questionNumber?: string;
+  field?: string;
+  difficulty?: string;
+  questionText: string;
+  choices: string[];
+  answerIndex: number;
+  explanation?: string;
+  sourceType: QuestionSourceType;
+  sourceLabel?: string;
+  sourceUrl?: string;
+};
+
+export type QuestionAnswerResponse = {
+  attemptId: number;
+  questionId: number;
+  selectedIndex: number;
+  answerIndex: number;
+  correct: boolean;
+  explanation?: string | null;
+};
+
+export type QuestionImportResult = {
+  importedCount: number;
+  skippedCount: number;
+  errorCount: number;
+  errors: string[];
+};
+
+export type QuestionGenerationRequest = {
+  studyTargetId: number;
+  examType: '応用情報技術者試験' | '証券外務員一種';
+  field: string;
+  difficulty: 'basic' | 'standard' | 'advanced';
+  count: number;
+};
+
+export type QuestionGenerationLog = {
+  id: number;
+  userId: number;
+  studyTargetId: number;
+  studyTargetName?: string | null;
+  examType: string;
+  field: string;
+  difficulty: string;
+  count: number;
+  createdAt: string;
+};
+
+export type QuestionAttempt = {
+  id: number;
+  userId: number;
+  questionId: number;
+  questionText?: string | null;
+  studyTargetName?: string | null;
+  field?: string | null;
+  selectedIndex: number;
+  answerIndex?: number | null;
+  correct: boolean;
+  answeredAt: string;
 };

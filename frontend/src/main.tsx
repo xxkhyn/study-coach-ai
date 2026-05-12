@@ -7,12 +7,20 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
+import QuestionAiGeneratePage from './pages/QuestionAiGeneratePage';
+import QuestionFormPage from './pages/QuestionFormPage';
+import QuestionImportPage from './pages/QuestionImportPage';
+import QuestionLogFormPage from './pages/QuestionLogFormPage';
+import QuestionLogListPage from './pages/QuestionLogListPage';
+import QuestionListPage from './pages/QuestionListPage';
+import QuestionPracticePage from './pages/QuestionPracticePage';
 import StudyLogFormPage from './pages/StudyLogFormPage';
 import StudyLogListPage from './pages/StudyLogListPage';
 import StudyTargetFormPage from './pages/StudyTargetFormPage';
 import StudyTargetListPage from './pages/StudyTargetListPage';
 import StudyTaskFormPage from './pages/StudyTaskFormPage';
 import StudyTaskListPage from './pages/StudyTaskListPage';
+import WrongQuestionListPage from './pages/WrongQuestionListPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import './styles.css';
 
@@ -40,6 +48,16 @@ const router = createBrowserRouter([
       { path: 'logs', element: <StudyLogListPage /> },
       { path: 'logs/new', element: <StudyLogFormPage /> },
       { path: 'logs/:id/edit', element: <StudyLogFormPage /> },
+      { path: 'question-logs', element: <QuestionLogListPage /> },
+      { path: 'question-logs/new', element: <QuestionLogFormPage /> },
+      { path: 'question-logs/:id/edit', element: <QuestionLogFormPage /> },
+      { path: 'questions', element: <QuestionListPage /> },
+      { path: 'questions/new', element: <QuestionFormPage /> },
+      { path: 'questions/generate-ai', element: <QuestionAiGeneratePage /> },
+      { path: 'questions/import', element: <QuestionImportPage /> },
+      { path: 'questions/practice', element: <QuestionPracticePage /> },
+      { path: 'questions/wrong', element: <WrongQuestionListPage /> },
+      { path: 'questions/:id/edit', element: <QuestionFormPage /> },
     ],
   },
 ], {
