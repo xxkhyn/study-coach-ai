@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Study Coach AI</title>
+  <desc id="desc">Blue app icon with a book and AI spark.</desc>
+  <rect width="512" height="512" rx="112" fill="#2563eb"/>
+  <rect x="112" y="141" width="130" height="230" rx="27" fill="#ffffff" opacity="0.96"/>
+  <rect x="270" y="141" width="130" height="230" rx="27" fill="#dbeafe"/>
+  <path d="M242 155v220M270 155v220" stroke="#1d4ed8" stroke-width="14" stroke-linecap="round"/>
+  <path d="M150 200h58M150 245h58M150 290h48M307 200h54M307 245h43M307 290h58" stroke="#2563eb" stroke-width="16" stroke-linecap="round"/>
+  <path d="M368 91l14 35 35 14-35 14-14 35-14-35-35-14 35-14 14-35z" fill="#facc15"/>
+  <circle cx="154" cy="392" r="18" fill="#bfdbfe"/>
+  <circle cx="358" cy="392" r="18" fill="#bfdbfe"/>
+</svg>

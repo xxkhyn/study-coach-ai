@@ -21,3 +21,12 @@ Thumbs.db
 # Environment
 .env
 .env.*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# Local imports / secrets
+*.csv
+*.tsv
+*.tmp
+tmp-*

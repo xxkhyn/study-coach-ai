@@ -1,0 +1,27 @@
+{
+  "name": "Study Coach AI",
+  "short_name": "StudyCoach",
+  "description": "資格・技術学習を管理し、問題演習、CSVインポート、AI問題生成、AIアドバイス、学習分析ができる学習支援アプリ",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "categories": ["education", "productivity"],
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
