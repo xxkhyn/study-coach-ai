@@ -28,7 +28,10 @@ import type {
 } from '../types';
 import { auth } from './auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api';
+const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080')
+  .replace(/\/+$/, '')
+  .replace(/\/api$/, '');
+const API_BASE_URL = `${API_ORIGIN}/api`;
 
 async function request<T>(path: string, options?: RequestInit, requireAuth = true): Promise<T> {
   const token = auth.getToken();
