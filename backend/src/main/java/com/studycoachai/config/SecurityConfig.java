@@ -1,13 +1,14 @@
 package com.studycoachai.config;
 
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.proc.SecurityContext;
-import java.time.OffsetDateTime;
+import com.studycoachai.exception.AppConfigurationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -73,14 +74,26 @@ public class SecurityConfig {
 
     @Bean
     JwtEncoder jwtEncoder(@Value("${app.jwt.secret}") String jwtSecret) {
-        return new NimbusJwtEncoder(new ImmutableSecret<SecurityContext>(jwtSecret.getBytes(StandardCharsets.UTF_8)));
+        byte[] secretBytes = validateJwtSecret(jwtSecret);
+        return new NimbusJwtEncoder(new ImmutableSecret<SecurityContext>(secretBytes));
     }
 
     @Bean
     JwtDecoder jwtDecoder(@Value("${app.jwt.secret}") String jwtSecret) {
-        SecretKey secretKey = new SecretKeySpec(jwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        SecretKey secretKey = new SecretKeySpec(validateJwtSecret(jwtSecret), "HmacSHA256");
         return NimbusJwtDecoder.withSecretKey(secretKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
+    }
+
+    private byte[] validateJwtSecret(String jwtSecret) {
+        if (jwtSecret == null || jwtSecret.isBlank()) {
+            throw new AppConfigurationException("JWT_SECRET is not set. Set a random secret of at least 32 characters.");
+        }
+        byte[] secretBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        if (secretBytes.length < 32) {
+            throw new AppConfigurationException("JWT_SECRET is too short. Set a random secret of at least 32 characters.");
+        }
+        return secretBytes;
     }
 }

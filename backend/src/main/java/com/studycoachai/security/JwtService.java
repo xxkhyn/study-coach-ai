@@ -3,7 +3,9 @@ package com.studycoachai.security;
 import java.time.Instant;
 
 import com.studycoachai.entity.User;
+import com.studycoachai.exception.AppConfigurationException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.oauth2.jwt.JwtEncodingException;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -35,6 +37,13 @@ public class JwtService {
                 .claim("email", user.getEmail())
                 .build();
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
-        return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+        try {
+            return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+        } catch (JwtEncodingException exception) {
+            throw new AppConfigurationException(
+                    "JWT token generation failed. Check that JWT_SECRET is set and is at least 32 characters long.",
+                    exception
+            );
+        }
     }
 }

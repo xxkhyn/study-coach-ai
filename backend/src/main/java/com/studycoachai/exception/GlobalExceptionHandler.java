@@ -39,8 +39,19 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    ResponseEntity<ApiErrorResponse> handleDataIntegrity() {
+    ResponseEntity<ApiErrorResponse> handleDataIntegrity(DataIntegrityViolationException exception) {
+        String message = exception.getMostSpecificCause().getMessage();
+        if (message != null && message.toLowerCase().contains("users")) {
+            return ResponseEntity.badRequest()
+                    .body(ApiErrorResponse.of(400, "Bad Request", List.of("Username or email is already used.")));
+        }
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiErrorResponse.of(409, "Conflict", List.of("Related data exists. Delete child records first.")));
+    }
+
+    @ExceptionHandler(AppConfigurationException.class)
+    ResponseEntity<ApiErrorResponse> handleAppConfiguration(AppConfigurationException exception) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiErrorResponse.of(500, "Server Configuration Error", List.of(exception.getMessage())));
     }
 }

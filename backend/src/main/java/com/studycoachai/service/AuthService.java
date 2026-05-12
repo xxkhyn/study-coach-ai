@@ -8,6 +8,7 @@ import com.studycoachai.entity.User;
 import com.studycoachai.exception.ResourceNotFoundException;
 import com.studycoachai.repository.UserRepository;
 import com.studycoachai.security.JwtService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,11 +33,16 @@ public class AuthService {
         if (userRepository.existsByEmail(request.email())) {
             throw new IllegalArgumentException("Email is already used.");
         }
-        User user = userRepository.save(new User(
-                request.username(),
-                request.email(),
-                passwordEncoder.encode(request.password())
-        ));
+        User user;
+        try {
+            user = userRepository.saveAndFlush(new User(
+                    request.username(),
+                    request.email(),
+                    passwordEncoder.encode(request.password())
+            ));
+        } catch (DataIntegrityViolationException exception) {
+            throw new IllegalArgumentException("Username or email is already used.");
+        }
         return toAuthResponse(user);
     }
 

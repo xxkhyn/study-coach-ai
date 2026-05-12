@@ -18,19 +18,19 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 80)
+    @Column(name = "username", nullable = false, unique = true, length = 80)
     private String username;
 
-    @Column(nullable = false, unique = true, length = 160)
+    @Column(name = "email", nullable = false, unique = true, length = 160)
     private String email;
 
-    @Column(nullable = false)
+    @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
     protected User() {
