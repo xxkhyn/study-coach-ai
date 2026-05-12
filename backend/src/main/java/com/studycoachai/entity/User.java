@@ -1,10 +1,14 @@
 package com.studycoachai.entity;
 
+import java.time.OffsetDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
@@ -14,37 +18,63 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 120)
+    @Column(nullable = false, unique = true, length = 80)
+    private String username;
+
+    @Column(nullable = false, unique = true, length = 160)
     private String email;
 
-    @Column(nullable = false, length = 120)
-    private String password;
+    @Column(nullable = false)
+    private String passwordHash;
 
-    @Column(nullable = false, length = 80)
-    private String displayName;
+    @Column(nullable = false)
+    private OffsetDateTime createdAt;
+
+    @Column(nullable = false)
+    private OffsetDateTime updatedAt;
 
     protected User() {
     }
 
-    public User(String email, String password, String displayName) {
+    public User(String username, String email, String passwordHash) {
+        this.username = username;
         this.email = email;
-        this.password = password;
-        this.displayName = displayName;
+        this.passwordHash = passwordHash;
+    }
+
+    @PrePersist
+    void onCreate() {
+        OffsetDateTime now = OffsetDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        updatedAt = OffsetDateTime.now();
     }
 
     public Long getId() {
         return id;
     }
 
+    public String getUsername() {
+        return username;
+    }
+
     public String getEmail() {
         return email;
     }
 
-    public String getPassword() {
-        return password;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
-    public String getDisplayName() {
-        return displayName;
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public OffsetDateTime getUpdatedAt() {
+        return updatedAt;
     }
 }

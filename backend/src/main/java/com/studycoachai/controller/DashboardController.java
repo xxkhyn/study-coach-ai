@@ -1,17 +1,17 @@
 package com.studycoachai.controller;
 
 import com.studycoachai.dto.DashboardResponse;
+import com.studycoachai.security.CurrentUser;
 import com.studycoachai.service.DashboardService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/dashboard")
 public class DashboardController {
-    private static final long DEFAULT_USER_ID = 1L;
-
     private final DashboardService dashboardService;
 
     public DashboardController(DashboardService dashboardService) {
@@ -19,7 +19,7 @@ public class DashboardController {
     }
 
     @GetMapping
-    public DashboardResponse getDashboard(@RequestParam(defaultValue = "" + DEFAULT_USER_ID) Long userId) {
-        return dashboardService.getDashboard(userId);
+    public DashboardResponse getDashboard(@AuthenticationPrincipal Jwt jwt) {
+        return dashboardService.getDashboard(CurrentUser.id(jwt));
     }
 }

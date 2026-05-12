@@ -1,71 +1,78 @@
 package com.studycoachai.service;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.List;
 
 import com.studycoachai.dto.DashboardResponse;
+import com.studycoachai.dto.QuestionLogResponse;
+import com.studycoachai.dto.StudyLogResponse;
+import com.studycoachai.dto.StudyLogSummaryResponse;
 import com.studycoachai.dto.StudyTaskResponse;
-import com.studycoachai.entity.StudyTask;
-import com.studycoachai.repository.StudyTargetRepository;
+import com.studycoachai.repository.QuestionLogRepository;
+import com.studycoachai.repository.StudyLogRepository;
 import com.studycoachai.repository.StudyTaskRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DashboardService {
-    private final StudyTargetRepository studyTargetRepository;
-    private final StudyTaskRepository studyTaskRepository;
+    private static final int RECENT_LIMIT = 5;
 
-    public DashboardService(StudyTargetRepository studyTargetRepository, StudyTaskRepository studyTaskRepository) {
-        this.studyTargetRepository = studyTargetRepository;
+    private final StudyTaskRepository studyTaskRepository;
+    private final StudyLogRepository studyLogRepository;
+    private final QuestionLogRepository questionLogRepository;
+    private final StudyLogService studyLogService;
+    private final AnalyticsService analyticsService;
+
+    public DashboardService(
+            StudyTaskRepository studyTaskRepository,
+            StudyLogRepository studyLogRepository,
+            QuestionLogRepository questionLogRepository,
+            StudyLogService studyLogService,
+            AnalyticsService analyticsService
+    ) {
         this.studyTaskRepository = studyTaskRepository;
+        this.studyLogRepository = studyLogRepository;
+        this.questionLogRepository = questionLogRepository;
+        this.studyLogService = studyLogService;
+        this.analyticsService = analyticsService;
     }
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboard(Long userId) {
         LocalDate today = LocalDate.now();
-        LocalDate weekStart = today.with(DayOfWeek.MONDAY);
-        LocalDate weekEnd = weekStart.plusDays(6);
-        List<StudyTask> tasks = studyTaskRepository.findByUserIdOrderByCompletedAscDueDateAscCreatedAtDesc(userId);
-
-        long completed = tasks.stream().filter(StudyTask::isCompleted).count();
-        long overdue = tasks.stream()
-                .filter(task -> !task.isCompleted())
-                .filter(task -> task.getDueDate() != null && task.getDueDate().isBefore(today))
-                .count();
-        int plannedMinutesThisWeek = tasks.stream()
-                .filter(task -> task.getDueDate() != null)
-                .filter(task -> !task.getDueDate().isBefore(weekStart) && !task.getDueDate().isAfter(weekEnd))
-                .map(StudyTask::getPlannedMinutes)
-                .map(minutes -> minutes == null ? 0 : minutes)
-                .reduce(0, Integer::sum);
-
-        List<StudyTaskResponse> todayTasks = tasks.stream()
-                .filter(task -> today.equals(task.getDueDate()))
+        List<StudyTaskResponse> todayTasks = studyTaskRepository
+                .findByUserIdAndCompletedFalseAndDueDate(userId, today)
+                .stream()
                 .map(StudyTaskResponse::from)
                 .toList();
-
-        List<StudyTaskResponse> upcomingTasks = tasks.stream()
-                .filter(task -> !task.isCompleted())
-                .filter(task -> task.getDueDate() != null && !task.getDueDate().isBefore(today))
-                .sorted(Comparator.comparing(StudyTask::getDueDate))
-                .limit(5)
+        List<StudyTaskResponse> overdueTasks = studyTaskRepository
+                .findByUserIdAndCompletedFalseAndDueDateBeforeOrderByDueDateAsc(userId, today)
+                .stream()
                 .map(StudyTaskResponse::from)
                 .toList();
-
-        long targetCount = studyTargetRepository.findByUserIdOrderByCreatedAtDesc(userId).size();
+        StudyLogSummaryResponse weeklySummary = studyLogService.weeklySummary(userId);
+        List<StudyLogResponse> recentStudyLogs = studyLogRepository
+                .findByUserIdOrderByStudiedDateDescCreatedAtDesc(userId)
+                .stream()
+                .limit(RECENT_LIMIT)
+                .map(StudyLogResponse::from)
+                .toList();
+        List<QuestionLogResponse> recentQuestionLogs = questionLogRepository
+                .findByUserIdOrderByPracticedDateDescCreatedAtDesc(userId)
+                .stream()
+                .limit(RECENT_LIMIT)
+                .map(QuestionLogResponse::from)
+                .toList();
 
         return new DashboardResponse(
-                targetCount,
-                tasks.size(),
-                completed,
-                tasks.size() - completed,
-                overdue,
-                plannedMinutesThisWeek,
                 todayTasks,
-                upcomingTasks
+                overdueTasks,
+                weeklySummary,
+                analyticsService.accuracyByField(userId),
+                analyticsService.weakFields(userId),
+                recentStudyLogs,
+                recentQuestionLogs
         );
     }
 }

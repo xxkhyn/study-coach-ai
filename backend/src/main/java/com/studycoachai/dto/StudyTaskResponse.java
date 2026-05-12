@@ -1,31 +1,36 @@
 package com.studycoachai.dto;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 
 import com.studycoachai.entity.StudyTask;
 
 public record StudyTaskResponse(
         Long id,
         Long userId,
-        Long targetId,
-        String targetName,
+        Long studyTargetId,
+        String studyTargetName,
         String title,
-        String fieldName,
+        String field,
         Integer plannedMinutes,
         LocalDate dueDate,
-        boolean completed
+        boolean completed,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
 ) {
     public static StudyTaskResponse from(StudyTask task) {
         return new StudyTaskResponse(
                 task.getId(),
-                task.getUser().getId(),
-                task.getStudyTarget().getId(),
-                task.getStudyTarget().getName(),
+                task.getUserId(),
+                task.getStudyTargetId(),
+                task.getStudyTarget() == null ? null : task.getStudyTarget().getName(),
                 task.getTitle(),
-                task.getFieldName(),
+                task.getField(),
                 task.getPlannedMinutes(),
                 task.getDueDate(),
-                task.isCompleted()
+                task.isCompleted(),
+                task.getCreatedAt(),
+                task.getUpdatedAt()
         );
     }
 }

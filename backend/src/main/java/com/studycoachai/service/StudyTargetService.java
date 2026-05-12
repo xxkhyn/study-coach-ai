@@ -5,21 +5,17 @@ import java.util.List;
 import com.studycoachai.dto.StudyTargetRequest;
 import com.studycoachai.dto.StudyTargetResponse;
 import com.studycoachai.entity.StudyTarget;
-import com.studycoachai.entity.User;
 import com.studycoachai.exception.ResourceNotFoundException;
 import com.studycoachai.repository.StudyTargetRepository;
-import com.studycoachai.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class StudyTargetService {
     private final StudyTargetRepository studyTargetRepository;
-    private final UserRepository userRepository;
 
-    public StudyTargetService(StudyTargetRepository studyTargetRepository, UserRepository userRepository) {
+    public StudyTargetService(StudyTargetRepository studyTargetRepository) {
         this.studyTargetRepository = studyTargetRepository;
-        this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
@@ -29,16 +25,18 @@ public class StudyTargetService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public StudyTargetResponse get(Long userId, Long id) {
+        return StudyTargetResponse.from(findTarget(userId, id));
+    }
+
     @Transactional
     public StudyTargetResponse create(Long userId, StudyTargetRequest request) {
-        User user = findUser(userId);
         StudyTarget target = new StudyTarget(
-                user,
+                userId,
                 request.name(),
-                request.category(),
-                request.examDate(),
-                request.goalDate(),
-                request.memo()
+                request.description(),
+                request.targetDate()
         );
         return StudyTargetResponse.from(studyTargetRepository.save(target));
     }
@@ -46,25 +44,13 @@ public class StudyTargetService {
     @Transactional
     public StudyTargetResponse update(Long userId, Long id, StudyTargetRequest request) {
         StudyTarget target = findTarget(userId, id);
-        target.update(
-                request.name(),
-                request.category(),
-                request.examDate(),
-                request.goalDate(),
-                request.memo()
-        );
+        target.update(request.name(), request.description(), request.targetDate());
         return StudyTargetResponse.from(target);
     }
 
     @Transactional
     public void delete(Long userId, Long id) {
-        StudyTarget target = findTarget(userId, id);
-        studyTargetRepository.delete(target);
-    }
-
-    private User findUser(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        studyTargetRepository.delete(findTarget(userId, id));
     }
 
     private StudyTarget findTarget(Long userId, Long id) {

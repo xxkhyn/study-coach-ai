@@ -32,6 +32,12 @@ public class GlobalExceptionHandler {
                 .body(ApiErrorResponse.of(400, "Bad Request", List.of(exception.getMessage())));
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    ResponseEntity<ApiErrorResponse> handleIllegalState(IllegalStateException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiErrorResponse.of(502, "AI Advice Error", List.of(exception.getMessage())));
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ApiErrorResponse> handleDataIntegrity() {
         return ResponseEntity.status(HttpStatus.CONFLICT)

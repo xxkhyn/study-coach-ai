@@ -5,12 +5,9 @@ import java.time.OffsetDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -22,22 +19,16 @@ public class StudyTarget {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(nullable = false)
+    private Long userId;
 
     @Column(nullable = false, length = 120)
     private String name;
 
-    @Column(length = 80)
-    private String category;
-
-    private LocalDate examDate;
-
-    private LocalDate goalDate;
-
     @Column(length = 1000)
-    private String memo;
+    private String description;
+
+    private LocalDate targetDate;
 
     @Column(nullable = false)
     private OffsetDateTime createdAt;
@@ -48,13 +39,11 @@ public class StudyTarget {
     protected StudyTarget() {
     }
 
-    public StudyTarget(User user, String name, String category, LocalDate examDate, LocalDate goalDate, String memo) {
-        this.user = user;
+    public StudyTarget(Long userId, String name, String description, LocalDate targetDate) {
+        this.userId = userId;
         this.name = name;
-        this.category = category;
-        this.examDate = examDate;
-        this.goalDate = goalDate;
-        this.memo = memo;
+        this.description = description;
+        this.targetDate = targetDate;
     }
 
     @PrePersist
@@ -69,40 +58,30 @@ public class StudyTarget {
         updatedAt = OffsetDateTime.now();
     }
 
-    public void update(String name, String category, LocalDate examDate, LocalDate goalDate, String memo) {
+    public void update(String name, String description, LocalDate targetDate) {
         this.name = name;
-        this.category = category;
-        this.examDate = examDate;
-        this.goalDate = goalDate;
-        this.memo = memo;
+        this.description = description;
+        this.targetDate = targetDate;
     }
 
     public Long getId() {
         return id;
     }
 
-    public User getUser() {
-        return user;
+    public Long getUserId() {
+        return userId;
     }
 
     public String getName() {
         return name;
     }
 
-    public String getCategory() {
-        return category;
+    public String getDescription() {
+        return description;
     }
 
-    public LocalDate getExamDate() {
-        return examDate;
-    }
-
-    public LocalDate getGoalDate() {
-        return goalDate;
-    }
-
-    public String getMemo() {
-        return memo;
+    public LocalDate getTargetDate() {
+        return targetDate;
     }
 
     public OffsetDateTime getCreatedAt() {

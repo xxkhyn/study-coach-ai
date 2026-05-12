@@ -6,11 +6,9 @@ import com.studycoachai.dto.StudyTaskRequest;
 import com.studycoachai.dto.StudyTaskResponse;
 import com.studycoachai.entity.StudyTarget;
 import com.studycoachai.entity.StudyTask;
-import com.studycoachai.entity.User;
 import com.studycoachai.exception.ResourceNotFoundException;
 import com.studycoachai.repository.StudyTargetRepository;
 import com.studycoachai.repository.StudyTaskRepository;
-import com.studycoachai.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,16 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class StudyTaskService {
     private final StudyTaskRepository studyTaskRepository;
     private final StudyTargetRepository studyTargetRepository;
-    private final UserRepository userRepository;
 
-    public StudyTaskService(
-            StudyTaskRepository studyTaskRepository,
-            StudyTargetRepository studyTargetRepository,
-            UserRepository userRepository
-    ) {
+    public StudyTaskService(StudyTaskRepository studyTaskRepository, StudyTargetRepository studyTargetRepository) {
         this.studyTaskRepository = studyTaskRepository;
         this.studyTargetRepository = studyTargetRepository;
-        this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
@@ -37,15 +29,19 @@ public class StudyTaskService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public StudyTaskResponse get(Long userId, Long id) {
+        return StudyTaskResponse.from(findTask(userId, id));
+    }
+
     @Transactional
     public StudyTaskResponse create(Long userId, StudyTaskRequest request) {
-        User user = findUser(userId);
-        StudyTarget target = findTarget(userId, request.targetId());
+        StudyTarget target = findTarget(userId, request.studyTargetId());
         StudyTask task = new StudyTask(
-                user,
-                target,
+                userId,
+                target.getId(),
                 request.title(),
-                request.fieldName(),
+                request.field(),
                 request.plannedMinutes(),
                 request.dueDate(),
                 request.completed()
@@ -56,11 +52,11 @@ public class StudyTaskService {
     @Transactional
     public StudyTaskResponse update(Long userId, Long id, StudyTaskRequest request) {
         StudyTask task = findTask(userId, id);
-        StudyTarget target = findTarget(userId, request.targetId());
+        StudyTarget target = findTarget(userId, request.studyTargetId());
         task.update(
-                target,
+                target.getId(),
                 request.title(),
-                request.fieldName(),
+                request.field(),
                 request.plannedMinutes(),
                 request.dueDate(),
                 request.completed()
@@ -69,14 +65,15 @@ public class StudyTaskService {
     }
 
     @Transactional
-    public void delete(Long userId, Long id) {
+    public StudyTaskResponse complete(Long userId, Long id, boolean completed) {
         StudyTask task = findTask(userId, id);
-        studyTaskRepository.delete(task);
+        task.setCompleted(completed);
+        return StudyTaskResponse.from(task);
     }
 
-    private User findUser(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+    @Transactional
+    public void delete(Long userId, Long id) {
+        studyTaskRepository.delete(findTask(userId, id));
     }
 
     private StudyTarget findTarget(Long userId, Long targetId) {

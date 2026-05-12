@@ -22,19 +22,21 @@ public class StudyTask {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(nullable = false)
+    private Long userId;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "study_target_id", nullable = false)
+    @Column(name = "study_target_id", nullable = false)
+    private Long studyTargetId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "study_target_id", insertable = false, updatable = false)
     private StudyTarget studyTarget;
 
     @Column(nullable = false, length = 160)
     private String title;
 
     @Column(length = 80)
-    private String fieldName;
+    private String field;
 
     private Integer plannedMinutes;
 
@@ -52,11 +54,11 @@ public class StudyTask {
     protected StudyTask() {
     }
 
-    public StudyTask(User user, StudyTarget studyTarget, String title, String fieldName, Integer plannedMinutes, LocalDate dueDate, boolean completed) {
-        this.user = user;
-        this.studyTarget = studyTarget;
+    public StudyTask(Long userId, Long studyTargetId, String title, String field, Integer plannedMinutes, LocalDate dueDate, boolean completed) {
+        this.userId = userId;
+        this.studyTargetId = studyTargetId;
         this.title = title;
-        this.fieldName = fieldName;
+        this.field = field;
         this.plannedMinutes = plannedMinutes;
         this.dueDate = dueDate;
         this.completed = completed;
@@ -74,12 +76,16 @@ public class StudyTask {
         updatedAt = OffsetDateTime.now();
     }
 
-    public void update(StudyTarget studyTarget, String title, String fieldName, Integer plannedMinutes, LocalDate dueDate, boolean completed) {
-        this.studyTarget = studyTarget;
+    public void update(Long studyTargetId, String title, String field, Integer plannedMinutes, LocalDate dueDate, boolean completed) {
+        this.studyTargetId = studyTargetId;
         this.title = title;
-        this.fieldName = fieldName;
+        this.field = field;
         this.plannedMinutes = plannedMinutes;
         this.dueDate = dueDate;
+        this.completed = completed;
+    }
+
+    public void setCompleted(boolean completed) {
         this.completed = completed;
     }
 
@@ -87,8 +93,12 @@ public class StudyTask {
         return id;
     }
 
-    public User getUser() {
-        return user;
+    public Long getUserId() {
+        return userId;
+    }
+
+    public Long getStudyTargetId() {
+        return studyTargetId;
     }
 
     public StudyTarget getStudyTarget() {
@@ -99,8 +109,8 @@ public class StudyTask {
         return title;
     }
 
-    public String getFieldName() {
-        return fieldName;
+    public String getField() {
+        return field;
     }
 
     public Integer getPlannedMinutes() {

@@ -1,20 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import EmptyState from '../components/EmptyState';
 import { api } from '../services/api';
-import type { Dashboard, StudyTask } from '../types';
+import type { Dashboard, QuestionLog, StudyLog, StudyTask } from '../types';
 
-function formatMinutes(minutes: number) {
-  if (minutes < 60) {
-    return `${minutes}分`;
-  }
+const minutesLabel = (minutes: number) => {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest === 0 ? `${hours}時間` : `${hours}時間${rest}分`;
-}
+  if (hours === 0) return `${rest}分`;
+  if (rest === 0) return `${hours}時間`;
+  return `${hours}時間${rest}分`;
+};
 
-function TaskMiniList({ tasks }: { tasks: StudyTask[] }) {
+const dateLabel = (value?: string | null) => value ?? '未設定';
+const percentLabel = (value: number) => `${Number(value).toFixed(1)}%`;
+const targetLabel = (value?: string | null) => value ?? '学習対象未設定';
+const fieldLabel = (value?: string | null) => (value && value.trim().length > 0 ? value : '分野未設定');
+
+function TaskList({ tasks }: { tasks: StudyTask[] }) {
   if (tasks.length === 0) {
-    return <EmptyState title="該当タスクなし" message="期限つきのタスクを登録するとここに表示されます。" />;
+    return <EmptyState title="まだデータがありません" message="期限付きの未完了タスクがここに表示されます。" />;
   }
 
   return (
@@ -24,11 +29,54 @@ function TaskMiniList({ tasks }: { tasks: StudyTask[] }) {
           <div>
             <h3>{task.title}</h3>
             <p className="muted">
-              {task.targetName}
-              {task.fieldName ? ` / ${task.fieldName}` : ''}
+              {targetLabel(task.studyTargetName)} / {fieldLabel(task.field)}
             </p>
           </div>
-          <span className={task.completed ? 'status done' : 'status'}>{task.completed ? '完了' : '未完了'}</span>
+          <span className="pill">{dateLabel(task.dueDate)}</span>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function StudyLogList({ logs }: { logs: StudyLog[] }) {
+  if (logs.length === 0) {
+    return <EmptyState title="まだデータがありません" message="学習ログを登録すると直近の記録が表示されます。" />;
+  }
+
+  return (
+    <div className="mini-list">
+      {logs.map((log) => (
+        <article className="mini-item" key={log.id}>
+          <div>
+            <h3>{targetLabel(log.studyTargetName)}</h3>
+            <p className="muted">
+              {fieldLabel(log.field)} / {minutesLabel(log.minutes)}
+            </p>
+          </div>
+          <span className="pill">{log.studiedDate}</span>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function QuestionLogList({ logs }: { logs: QuestionLog[] }) {
+  if (logs.length === 0) {
+    return <EmptyState title="まだデータがありません" message="演習ログを登録すると直近の記録が表示されます。" />;
+  }
+
+  return (
+    <div className="mini-list">
+      {logs.map((log) => (
+        <article className="mini-item" key={log.id}>
+          <div>
+            <h3>{targetLabel(log.studyTargetName)}</h3>
+            <p className="muted">
+              {fieldLabel(log.field)} / {log.correctCount}/{log.solvedCount}問
+            </p>
+          </div>
+          <span className="pill">{percentLabel(log.accuracyRate)}</span>
         </article>
       ))}
     </div>
@@ -37,118 +85,187 @@ function TaskMiniList({ tasks }: { tasks: StudyTask[] }) {
 
 export default function DashboardPage() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    void loadDashboard();
+    api
+      .getDashboard()
+      .then(setDashboard)
+      .catch((err: Error) => setError(err.message))
+      .finally(() => setIsLoading(false));
   }, []);
 
-  async function loadDashboard() {
-    setLoading(true);
-    setError('');
-    try {
-      setDashboard(await api.getDashboard());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'ダッシュボードの取得に失敗しました');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const totalMinutes = dashboard?.weeklyStudySummary.totalMinutes ?? 0;
+  const targetSummaries = dashboard?.weeklyStudySummary.targetSummaries ?? [];
+  const weakFields = dashboard?.weakFields ?? [];
+  const fieldAccuracies = dashboard?.fieldAccuracies ?? [];
+  const maxTargetMinutes = useMemo(
+    () => Math.max(1, ...targetSummaries.map((summary) => summary.totalMinutes)),
+    [targetSummaries],
+  );
 
-  const completionRate = useMemo(() => {
-    if (!dashboard || dashboard.taskCount === 0) {
-      return 0;
-    }
-    return Math.round((dashboard.completedTaskCount / dashboard.taskCount) * 100);
-  }, [dashboard]);
-
-  if (loading) {
-    return <p className="muted">読み込み中...</p>;
+  if (isLoading) {
+    return <section className="panel">読み込み中...</section>;
   }
 
   if (error) {
-    return <p className="error">{error}</p>;
+    return <div className="error">{error}</div>;
   }
 
   if (!dashboard) {
-    return <EmptyState title="データがありません" message="学習対象とタスクを登録して始めましょう。" />;
+    return <EmptyState title="まだデータがありません" message="ダッシュボードを表示できませんでした。" />;
   }
 
   return (
-    <section className="dashboard">
-      <div className="stats-grid">
+    <div className="dashboard">
+      <section className="stats-grid">
         <article className="stat-card">
-          <span>学習対象</span>
-          <strong>{dashboard.targetCount}</strong>
-          <p>資格・技術テーマ</p>
-        </article>
-        <article className="stat-card">
-          <span>未完了タスク</span>
-          <strong>{dashboard.openTaskCount}</strong>
-          <p>今動いている学習</p>
-        </article>
-        <article className="stat-card">
-          <span>今週の予定</span>
-          <strong>{formatMinutes(dashboard.plannedMinutesThisWeek)}</strong>
-          <p>期限ベースの合計</p>
+          <span>今日のタスク</span>
+          <strong>{dashboard.todayTasks.length}</strong>
+          <p>今日が期限の未完了タスク</p>
         </article>
         <article className="stat-card attention">
-          <span>期限超過</span>
-          <strong>{dashboard.overdueTaskCount}</strong>
-          <p>早めに片づけたいもの</p>
+          <span>期限切れ</span>
+          <strong>{dashboard.overdueTasks.length}</strong>
+          <p>期限を過ぎた未完了タスク</p>
         </article>
-      </div>
+        <article className="stat-card">
+          <span>今週の学習時間</span>
+          <strong>{minutesLabel(totalMinutes)}</strong>
+          <p>
+            {dashboard.weeklyStudySummary.weekStart} から {dashboard.weeklyStudySummary.weekEnd}
+          </p>
+        </article>
+        <article className="stat-card">
+          <span>分野別正答率</span>
+          <strong>{fieldAccuracies.length}</strong>
+          <p>演習ログから集計</p>
+        </article>
+      </section>
 
-      <div className="dashboard-grid">
-        <section className="panel">
+      <section className="dashboard-grid three-cols">
+        <div className="panel">
           <div className="section-heading horizontal">
             <div>
               <p className="eyebrow">Today</p>
-              <h2>今日やるタスク</h2>
+              <h2>今日のタスク</h2>
             </div>
-            <span className="pill">{dashboard.todayTasks.length}件</span>
+            <Link className="button-link secondary-link" to="/tasks">
+              タスクを見る
+            </Link>
           </div>
-          <TaskMiniList tasks={dashboard.todayTasks} />
-        </section>
+          <TaskList tasks={dashboard.todayTasks} />
+        </div>
 
-        <section className="panel">
+        <div className="panel">
+          <div className="section-heading">
+            <p className="eyebrow">Overdue</p>
+            <h2>期限切れタスク</h2>
+          </div>
+          <TaskList tasks={dashboard.overdueTasks} />
+        </div>
+
+        <div className="panel">
+          <div className="section-heading">
+            <p className="eyebrow">Weak Fields</p>
+            <h2>苦手分野ランキング</h2>
+          </div>
+          {weakFields.length === 0 ? (
+            <EmptyState title="まだデータがありません" message="演習ログを登録すると正答率の低い分野が表示されます。" />
+          ) : (
+            <div className="rank-list">
+              {weakFields.map((field, index) => (
+                <article className="rank-item" key={field.field}>
+                  <span>{index + 1}</span>
+                  <div>
+                    <h3>{field.field}</h3>
+                    <p className="muted">
+                      正答率 {percentLabel(field.accuracyRate)} / {field.correctCount}/{field.solvedCount}問
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="dashboard-grid">
+        <div className="panel">
+          <div className="section-heading">
+            <p className="eyebrow">Weekly</p>
+            <h2>学習対象別の学習時間</h2>
+          </div>
+          {targetSummaries.length === 0 ? (
+            <EmptyState title="まだデータがありません" message="学習ログを登録すると対象別の学習時間が表示されます。" />
+          ) : (
+            <div className="bar-list">
+              {targetSummaries.map((summary) => (
+                <article className="bar-item" key={summary.studyTargetId}>
+                  <div>
+                    <strong>{targetLabel(summary.studyTargetName)}</strong>
+                    <span>{minutesLabel(summary.totalMinutes)}</span>
+                  </div>
+                  <div className="progress-track">
+                    <div
+                      className="progress-bar"
+                      style={{ width: `${Math.max(4, (summary.totalMinutes / maxTargetMinutes) * 100)}%` }}
+                    />
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="panel">
+          <div className="section-heading">
+            <p className="eyebrow">Accuracy</p>
+            <h2>分野別正答率</h2>
+          </div>
+          {fieldAccuracies.length === 0 ? (
+            <EmptyState title="まだデータがありません" message="演習ログを登録すると分野別の正答率が表示されます。" />
+          ) : (
+            <div className="mini-list">
+              {fieldAccuracies.map((field) => (
+                <article className="mini-item" key={field.field}>
+                  <div>
+                    <h3>{field.field}</h3>
+                    <p className="muted">
+                      {field.correctCount}/{field.solvedCount}問 正解
+                    </p>
+                  </div>
+                  <span className="pill">{percentLabel(field.accuracyRate)}</span>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="dashboard-grid">
+        <div className="panel">
           <div className="section-heading horizontal">
             <div>
-              <p className="eyebrow">Progress</p>
-              <h2>全体の進捗</h2>
+              <p className="eyebrow">Recent</p>
+              <h2>直近の学習ログ</h2>
             </div>
-            <span className="pill">{completionRate}%</span>
+            <Link className="button-link secondary-link" to="/logs">
+              ログを見る
+            </Link>
           </div>
-          <div className="progress-track">
-            <div className="progress-bar" style={{ width: `${completionRate}%` }} />
-          </div>
-          <dl className="meta-grid two-cols">
-            <div>
-              <dt>完了</dt>
-              <dd>{dashboard.completedTaskCount}件</dd>
-            </div>
-            <div>
-              <dt>合計</dt>
-              <dd>{dashboard.taskCount}件</dd>
-            </div>
-          </dl>
-          <p className="coach-note">
-            まずは期限が近いタスクを小さく終わらせると、次に積む学習ログやAIアドバイス機能が効きやすくなります。
-          </p>
-        </section>
-      </div>
-
-      <section className="panel">
-        <div className="section-heading horizontal">
-          <div>
-            <p className="eyebrow">Upcoming</p>
-            <h2>直近のタスク</h2>
-          </div>
-          <span className="pill">最大5件</span>
+          <StudyLogList logs={dashboard.recentStudyLogs} />
         </div>
-        <TaskMiniList tasks={dashboard.upcomingTasks} />
+
+        <div className="panel">
+          <div className="section-heading">
+            <p className="eyebrow">Practice</p>
+            <h2>直近の演習ログ</h2>
+          </div>
+          <QuestionLogList logs={dashboard.recentQuestionLogs} />
+        </div>
       </section>
-    </section>
+    </div>
   );
 }

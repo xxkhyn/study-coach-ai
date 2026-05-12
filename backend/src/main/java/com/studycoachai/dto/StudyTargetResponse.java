@@ -1,6 +1,7 @@
 package com.studycoachai.dto;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 
 import com.studycoachai.entity.StudyTarget;
 
@@ -8,20 +9,20 @@ public record StudyTargetResponse(
         Long id,
         Long userId,
         String name,
-        String category,
-        LocalDate examDate,
-        LocalDate goalDate,
-        String memo
+        String description,
+        LocalDate targetDate,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
 ) {
     public static StudyTargetResponse from(StudyTarget target) {
         return new StudyTargetResponse(
                 target.getId(),
-                target.getUser().getId(),
+                target.getUserId(),
                 target.getName(),
-                target.getCategory(),
-                target.getExamDate(),
-                target.getGoalDate(),
-                target.getMemo()
+                target.getDescription(),
+                target.getTargetDate(),
+                target.getCreatedAt(),
+                target.getUpdatedAt()
         );
     }
 }

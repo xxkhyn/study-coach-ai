@@ -8,9 +8,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record StudyTaskRequest(
-        @NotNull Long targetId,
+        @NotNull Long studyTargetId,
         @NotBlank @Size(max = 160) String title,
-        @Size(max = 80) String fieldName,
+        @Size(max = 80) String field,
         @Min(0) Integer plannedMinutes,
         LocalDate dueDate,
         boolean completed
